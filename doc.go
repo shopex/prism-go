@@ -1,6 +1,5 @@
 // Copyright 2014 ShopeX. All rights reserved.
 
-// Package websocket implements the WebSocket protocol defined in RFC 6455.
 //
 // Connect
 //  c := NewClient("http://127.0.0.1:8080/api", "umjj5xj6", "xa4k7gzyemzjkscapdjb")
