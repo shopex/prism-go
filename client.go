@@ -16,6 +16,7 @@ type Client struct {
 	Server        string
 	OAuthToken    string
 	AlwaysUseSign bool
+	server_url    *url.URL
 	secret        string
 }
 
@@ -23,27 +24,29 @@ type Response struct {
 	Raw []byte
 }
 
-func NewClient(server, key, secret string) *Client {
-	return &Client{
+func NewClient(server, key, secret string) (c *Client, err error) {
+	c = &Client{
 		Key:    key,
 		Server: server,
 		secret: secret,
 	}
+	c.server_url, err = url.Parse(server)
+	return
 }
 
 func (r *Response) Unmarshal(v interface{}) error {
 	return json.Unmarshal(r.Raw, v)
 }
 
-func (me *Client) Get(api string, params *map[string]interface{}) (result interface{}, err error) {
+func (me *Client) Get(api string, params *map[string]interface{}) (rsp *Response, err error) {
 	return me.do("GET", api, params)
 }
 
-func (me *Client) Post(api string, params *map[string]interface{}) (result interface{}, err error) {
+func (me *Client) Post(api string, params *map[string]interface{}) (rsp *Response, err error) {
 	return me.do("POST", api, params)
 }
 
-func (me *Client) do(method, api string, params *map[string]interface{}) (result interface{}, err error) {
+func (me *Client) do(method, api string, params *map[string]interface{}) (rsp *Response, err error) {
 	r, err := me.get_request(method, api, params)
 	if err != nil {
 		return nil, err
@@ -57,7 +60,7 @@ func (me *Client) do(method, api string, params *map[string]interface{}) (result
 	data, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 
-	return Response{data}, err
+	return &Response{data}, err
 }
 
 func (me *Client) get_request(method, api string, params *map[string]interface{}) (req *http.Request, err error) {

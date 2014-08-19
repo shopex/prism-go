@@ -2,7 +2,7 @@
 
 //
 // Connect
-//  c := NewClient("http://127.0.0.1:8080/api", "umjj5xj6", "xa4k7gzyemzjkscapdjb")
+//  c, err := prism.NewClient("http://127.0.0.1:8080/api", "<key>", "<secret>")
 //  c.OAuthToken = "tokentoken111"
 //
 // RPC
