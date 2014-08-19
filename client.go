@@ -38,20 +38,20 @@ func (r *Response) Unmarshal(v interface{}) error {
 	return json.Unmarshal(r.Raw, v)
 }
 
-func (me *Client) Get(api string, params *map[string]interface{}) (rsp *Response, err error) {
-	return me.do("GET", api, params)
+func (c *Client) Get(api string, params *map[string]interface{}) (rsp *Response, err error) {
+	return c.do("GET", api, params)
 }
 
-func (me *Client) Post(api string, params *map[string]interface{}) (rsp *Response, err error) {
-	return me.do("POST", api, params)
+func (c *Client) Post(api string, params *map[string]interface{}) (rsp *Response, err error) {
+	return c.do("POST", api, params)
 }
 
-func (me *Client) do(method, api string, params *map[string]interface{}) (rsp *Response, err error) {
-	r, err := me.get_request(method, api, params)
+func (c *Client) do(method, api string, params *map[string]interface{}) (rsp *Response, err error) {
+	r, err := c.get_request(method, api, params)
 	if err != nil {
 		return nil, err
 	}
-	res, err := me.Client.Do(r)
+	res, err := c.Client.Do(r)
 
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (me *Client) do(method, api string, params *map[string]interface{}) (rsp *R
 	return &Response{data}, err
 }
 
-func (me *Client) get_request(method, api string, params *map[string]interface{}) (req *http.Request, err error) {
+func (c *Client) get_request(method, api string, params *map[string]interface{}) (req *http.Request, err error) {
 	vals := url.Values{}
 
 	if params != nil {
@@ -72,21 +72,21 @@ func (me *Client) get_request(method, api string, params *map[string]interface{}
 		}
 	}
 
-	r, err := http.NewRequest(method, me.Server+"/"+api, nil)
+	r, err := http.NewRequest(method, c.Server+"/"+api, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	r.Header.Set("User-Agent", "Prism/Go")
-	if me.OAuthToken != "" {
-		r.Header.Set("Authorization", "Bearer "+me.OAuthToken)
+	if c.OAuthToken != "" {
+		r.Header.Set("Authorization", "Bearer "+c.OAuthToken)
 	}
 
 	use_url_query := method != "POST"
 
-	vals.Set("client_id", me.Key)
-	if !me.AlwaysUseSign && r.URL.Scheme == "https" {
-		vals.Set("secret", me.secret)
+	vals.Set("client_id", c.Key)
+	if !c.AlwaysUseSign && r.URL.Scheme == "https" {
+		vals.Set("secret", c.secret)
 	} else {
 		vals.Set("sign_time", strconv.FormatInt(time.Now().Unix(), 10))
 		if use_url_query {
@@ -94,7 +94,7 @@ func (me *Client) get_request(method, api string, params *map[string]interface{}
 		} else {
 			r.PostForm = vals
 		}
-		vals.Set("sign", Sign(r, me.secret))
+		vals.Set("sign", Sign(r, c.secret))
 	}
 
 	query_string := vals.Encode()
