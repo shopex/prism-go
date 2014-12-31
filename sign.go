@@ -26,7 +26,7 @@ func Sign(r *http.Request, secret string) string {
 	h := md5.New()
 	io.WriteString(h, signstr)
 
-	return fmt.Sprintf("%032.X", h.Sum(nil))
+	return fmt.Sprintf("%032X", h.Sum(nil))
 }
 
 func escape(s string) string {
