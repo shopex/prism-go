@@ -29,6 +29,10 @@ func (c *Client) RequrireOAuth(req *http.Request, w http.ResponseWriter) (info *
 		p.Set("response_type", "code")
 		p.Set("redirect_uri", req.URL.String())
 		redirect_url = c.oauth_url("authorize", p)
+
+        w.Header().Set("Location", redirect_url)
+        w.WriteHeader(302)
+        w.Write([]byte("loading..."))
 	} else {
 		c2 := *c
 		c2.Server = c.oauth_url("", nil)
@@ -48,10 +52,7 @@ func (c *Client) RequrireOAuth(req *http.Request, w http.ResponseWriter) (info *
 		req.URL.RawQuery = q2.Encode()
 		redirect_url = req.URL.String()
 	}
-
-	w.Header().Set("Location", redirect_url)
-	w.WriteHeader(302)
-	w.Write([]byte("loading..."))
+    //todo: fix 
 	return
 }
 

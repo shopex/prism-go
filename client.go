@@ -86,7 +86,7 @@ func (c *Client) get_request(method, api string, params *map[string]interface{})
 
 	vals.Set("client_id", c.Key)
 	if !c.AlwaysUseSign && r.URL.Scheme == "https" {
-		vals.Set("secret", c.secret)
+		vals.Set("client_secret", c.secret)
 	} else {
 		vals.Set("sign_time", strconv.FormatInt(time.Now().Unix(), 10))
 		if use_url_query {
