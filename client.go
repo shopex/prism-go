@@ -2,6 +2,7 @@ package prism
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -86,6 +87,13 @@ func (c *Client) get_request(method, api string, params *map[string]interface{})
 
 	vals.Set("client_id", c.Key)
 	if !c.AlwaysUseSign && r.URL.Scheme == "https" {
+		tr := &http.Transport{
+			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
+			DisableCompression: true,
+		}
+		c.Client.Transport = tr
+
+		vals.Set("grant_type", "password")
 		vals.Set("client_secret", c.secret)
 	} else {
 		vals.Set("sign_time", strconv.FormatInt(time.Now().Unix(), 10))
