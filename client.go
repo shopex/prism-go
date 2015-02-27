@@ -93,7 +93,6 @@ func (c *Client) get_request(method, api string, params *map[string]interface{})
 		}
 		c.Client.Transport = tr
 
-		vals.Set("grant_type", "password")
 		vals.Set("client_secret", c.secret)
 	} else {
 		vals.Set("sign_time", strconv.FormatInt(time.Now().Unix(), 10))
