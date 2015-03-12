@@ -11,18 +11,23 @@ import (
 	"time"
 )
 
+const (
+	userAgent string = "Prism/Go"
+)
+
 type Client struct {
 	Client        http.Client
 	Key           string
 	Server        string
 	OAuthToken    string
 	AlwaysUseSign bool
-	server_url    *url.URL
+	serverUrl     *url.URL
 	secret        string
 }
 
 type Response struct {
 	Raw []byte
+
 }
 
 func NewClient(server, key, secret string) (c *Client, err error) {
@@ -31,7 +36,8 @@ func NewClient(server, key, secret string) (c *Client, err error) {
 		Server: server,
 		secret: secret,
 	}
-	c.server_url, err = url.Parse(server)
+
+	c.serverUrl, err = url.ParseRequestURI(server)
 	return
 }
 
@@ -48,7 +54,7 @@ func (c *Client) Post(api string, params *map[string]interface{}) (rsp *Response
 }
 
 func (c *Client) do(method, api string, params *map[string]interface{}) (rsp *Response, err error) {
-	r, err := c.get_request(method, api, params)
+	r, err := c.getRequest(method, api, params)
 	if err != nil {
 		return nil, err
 	}
@@ -64,12 +70,16 @@ func (c *Client) do(method, api string, params *map[string]interface{}) (rsp *Re
 	return &Response{data}, err
 }
 
-func (c *Client) get_request(method, api string, params *map[string]interface{}) (req *http.Request, err error) {
+//getRequest 生成请求对象
+//method 请求方法
+//api 请求url
+//params 查询参数
+func (c *Client) getRequest(method, api string, params *map[string]interface{}) (req *http.Request, err error) {
 	vals := url.Values{}
 
 	if params != nil {
 		for k, v := range *params {
-			vals.Set(k, param_to_str(v))
+			vals.Set(k, paramToStr(v))
 		}
 	}
 
@@ -78,14 +88,15 @@ func (c *Client) get_request(method, api string, params *map[string]interface{})
 		return nil, err
 	}
 
-	r.Header.Set("User-Agent", "Prism/Go")
+	r.Header.Set("User-Agent", userAgent)
 	if c.OAuthToken != "" {
-		r.Header.Set("Authorization", "Bearer "+c.OAuthToken)
+		r.Header.Set("Authorization", "Bearer "+ c.OAuthToken)
 	}
 
 	use_url_query := method != "POST"
 
 	vals.Set("client_id", c.Key)
+
 	if !c.AlwaysUseSign && r.URL.Scheme == "https" {
 		tr := &http.Transport{
 			TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
@@ -94,6 +105,7 @@ func (c *Client) get_request(method, api string, params *map[string]interface{})
 		c.Client.Transport = tr
 
 		vals.Set("client_secret", c.secret)
+
 	} else {
 		vals.Set("sign_time", strconv.FormatInt(time.Now().Unix(), 10))
 		if use_url_query {
@@ -117,7 +129,7 @@ func (c *Client) get_request(method, api string, params *map[string]interface{})
 	return r, nil
 }
 
-func param_to_str(v interface{}) (v2 string) {
+func paramToStr(v interface{}) (v2 string) {
 	switch v.(type) {
 	case string:
 		v2 = v.(string)

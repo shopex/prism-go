@@ -44,7 +44,7 @@ func (d *Delivery) Ack() error {
 }
 
 func (n *Notify) dail() (err error) {
-	req, err := n.Client.get_request("GET", "platform/notify", nil)
+	req, err := n.Client.getRequest("GET", "platform/notify", nil)
 	tcpcon, _ := net.Dial("tcp", req.URL.Host)
 	n.conn, _, err = websocket.NewClient(tcpcon, req.URL, req.Header, 128, 128)
 	return
@@ -79,6 +79,7 @@ func (n *Notify) encode(v interface{}) (bin []byte) {
 	}
 	return
 }
+
 
 func (n *Notify) Pub(routingKey, contentType string, body interface{}) (err error) {
 	buf := bytes.NewBuffer([]byte{command_publish})

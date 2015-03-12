@@ -37,7 +37,7 @@ func headers_str(sets *http.Header) string {
 	mk := make([]string, len(*sets))
 	i := 0
 	for k, _ := range *sets {
-		if k == "Authorization" || k[0:6] == "X-Api-" {
+		if k == "Authorization" || strings.Contains(k, "X-Api-") {
 			mk[i] = k
 			i++
 		}
@@ -52,6 +52,7 @@ func headers_str(sets *http.Header) string {
 	return strings.Join(s, "&")
 }
 
+//sorted_str
 func sorted_str(sets *url.Values, sep1 string, sep2 string, skip string) string {
 	mk := make([]string, len(*sets))
 	i := 0
@@ -72,3 +73,4 @@ func sorted_str(sets *url.Values, sep1 string, sep2 string, skip string) string 
 	}
 	return strings.Join(s, sep1)
 }
+

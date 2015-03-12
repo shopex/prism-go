@@ -57,7 +57,7 @@ func (c *Client) RequrireOAuth(req *http.Request, w http.ResponseWriter) (info *
 }
 
 func (c *Client) oauth_url(action string, params *url.Values) string {
-	u := *c.server_url
+	u := *c.serverUrl
 	u.Path, _ = filepath.Abs(u.Path + "/../oauth/" + action)
 	if params != nil {
 		u.RawQuery = params.Encode()
