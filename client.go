@@ -53,6 +53,14 @@ func (c *Client) Post(api string, params *map[string]interface{}) (rsp *Response
 	return c.do("POST", api, params)
 }
 
+func (c *Client) Put(api string, params *map[string]interface{}) (rsp *Response, err error) {
+	return c.do("PUT", api, params)
+}
+
+func (c *Client) Delete(api string, params *map[string]interface{}) (rsp *Response, err error) {
+	return c.do("DELETE", api, params)
+}
+
 func (c *Client) do(method, api string, params *map[string]interface{}) (rsp *Response, err error) {
 	r, err := c.getRequest(method, api, params)
 	if err != nil {
