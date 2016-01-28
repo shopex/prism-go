@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
-	"github.com/gorilla/websocket"
 	"net"
 	"strconv"
+
+	"github.com/gorilla/websocket"
 )
 
 func (me *Client) Notify() (n *Notify, err error) {
@@ -45,14 +46,24 @@ func (d *Delivery) Ack() error {
 
 func (n *Notify) dail() (err error) {
 	req, err := n.Client.getRequest("GET", "platform/notify", nil)
-	tcpcon, _ := net.Dial("tcp", req.URL.Host)
+	tcpcon, err := net.Dial("tcp", req.URL.Host)
+	if err != nil {
+		return err
+	}
+	req.URL.Scheme = "ws"
 	n.conn, _, err = websocket.NewClient(tcpcon, req.URL, req.Header, 128, 128)
 	return
 }
 
-func (n *Notify) Consume() (ch chan *Delivery, err error) {
+func (n *Notify) Consume(topic string) (ch chan *Delivery, err error) {
 	ch = make(chan *Delivery)
-	err = n.conn.WriteMessage(1, []byte{command_consume})
+	data := []byte{command_consume}
+	if topic != "" {
+		l := len(topic)
+		data = append(data, uint8(l/256), uint8(l%256))
+		data = append(data, []byte(topic)...)
+	}
+	err = n.conn.WriteMessage(1, data)
 
 	go func() {
 		for {
@@ -79,7 +90,6 @@ func (n *Notify) encode(v interface{}) (bin []byte) {
 	}
 	return
 }
-
 
 func (n *Notify) Pub(routingKey, contentType string, body interface{}) (err error) {
 	buf := bytes.NewBuffer([]byte{command_publish})
