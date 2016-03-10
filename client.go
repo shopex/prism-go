@@ -23,7 +23,7 @@ type Client struct {
 	AlwaysUseSign bool
 	serverUrl     *url.URL
 	secret        string
-	Timeout       time.Duration // timeout for Client
+	Timeout       int // timeout for Client second
 }
 
 type Response struct {
@@ -125,7 +125,7 @@ func (c *Client) getRequest(method, api string, params *map[string]interface{}) 
 	}
 
 	// we just need timeout forever
-	c.Client.Timeout = c.Timeout * time.Second
+	c.Client.Timeout = time.Duration(int64(c.Timeout)) * time.Second
 
 	query_string := vals.Encode()
 
