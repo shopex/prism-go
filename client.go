@@ -23,11 +23,11 @@ type Client struct {
 	AlwaysUseSign bool
 	serverUrl     *url.URL
 	secret        string
+	Timeout       time.Duration // timeout for Client
 }
 
 type Response struct {
 	Raw []byte
-
 }
 
 func NewClient(server, key, secret string) (c *Client, err error) {
@@ -98,7 +98,7 @@ func (c *Client) getRequest(method, api string, params *map[string]interface{}) 
 
 	r.Header.Set("User-Agent", userAgent)
 	if c.OAuthToken != "" {
-		r.Header.Set("Authorization", "Bearer "+ c.OAuthToken)
+		r.Header.Set("Authorization", "Bearer "+c.OAuthToken)
 	}
 
 	use_url_query := method != "POST"
@@ -123,6 +123,9 @@ func (c *Client) getRequest(method, api string, params *map[string]interface{}) 
 		}
 		vals.Set("sign", Sign(r, c.secret))
 	}
+
+	// we just need timeout forever
+	c.Client.Timeout = c.Timeout * time.Second
 
 	query_string := vals.Encode()
 
