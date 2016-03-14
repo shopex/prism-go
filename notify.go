@@ -96,7 +96,7 @@ func (n *Notify) consume(topic string, prefetch int) error {
 	return n.conn.WriteMessage(1, data)
 }
 
-func (n *Notify) readMessage(ch chan *Delivery) error {
+func (n *Notify) readMessage(ch chan *Delivery) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("(*Notify).Consume meet a panic (%s)\n", err)
