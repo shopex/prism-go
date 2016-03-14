@@ -67,6 +67,7 @@ func (n *Notify) retry() <-chan bool {
 			err = n.dail()
 			if err != nil {
 				log.Printf("reconnect to websocket fail (%s)\n", err)
+				continue
 			}
 			ch <- true
 			return
