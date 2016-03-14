@@ -46,27 +46,33 @@ func (d *Delivery) Ack() error {
 	return d.conn.WriteMessage(1, buf.Bytes())
 }
 
-func (n *Notify) retry() {
+func (n *Notify) retry() <-chan bool {
+	ch := make(chan bool)
 	if n.Client == nil {
 		log.Printf("can not retry on a nil cilent")
-		return
+		return ch
 	}
 
 	if n.conn != nil {
 		n.Close()
 	}
-	// 30秒重连
-	c := time.Tick(time.Second * 30)
 
-	var err error
-	for {
-		<-c
-		err = n.dail()
-		if err != nil {
-			log.Printf("reconnect to websocket fail (%s)\n", err)
+	go func() {
+		// 30秒重连
+		c := time.Tick(time.Second * 30)
+
+		var err error
+		for {
+			<-c
+			err = n.dail()
+			if err != nil {
+				log.Printf("reconnect to websocket fail (%s)\n", err)
+			}
+			ch <- true
+			return
 		}
-		return
-	}
+	}()
+	return ch
 }
 
 func (n *Notify) dail() (err error) {
@@ -80,33 +86,44 @@ func (n *Notify) dail() (err error) {
 	return
 }
 
-func (n *Notify) Consume(topic string) (ch chan *Delivery, err error) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("(*Notify).Consume meet a panic (%s)\n", err)
-			go n.retry()
-		}
-	}()
-	ch = make(chan *Delivery)
+func (n *Notify) consume(topic string, prefetch int) error {
 	data := []byte{command_consume}
 	if topic != "" {
 		l := len(topic)
 		data = append(data, uint8(l/256), uint8(l%256))
 		data = append(data, []byte(topic)...)
 	}
-	err = n.conn.WriteMessage(1, data)
+	return n.conn.WriteMessage(1, data)
+}
 
-	go func() {
-		for {
-			_, data, err := n.conn.ReadMessage()
-			d := &Delivery{}
-			err = json.Unmarshal(data, d)
-			d.conn = n.conn
-			if err == nil {
-				ch <- d
-			}
+func (n *Notify) readMessage(ch chan *Delivery) error {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("(*Notify).Consume meet a panic (%s)\n", err)
+			ok := n.retry()
+			<-ok
+			n.readMessage(ch)
 		}
 	}()
+	for {
+		_, data, err := n.conn.ReadMessage()
+		d := &Delivery{}
+		err = json.Unmarshal(data, d)
+		d.conn = n.conn
+		if err == nil {
+			ch <- d
+		}
+	}
+}
+
+func (n *Notify) Consume(topic string) (ch chan *Delivery, err error) {
+
+	ch = make(chan *Delivery)
+	err = n.consume(topic, 1)
+	if err != nil {
+		return
+	}
+	go n.readMessage(ch)
 	return
 }
 
