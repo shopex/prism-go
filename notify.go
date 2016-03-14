@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"log"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -44,6 +46,29 @@ func (d *Delivery) Ack() error {
 	return d.conn.WriteMessage(1, buf.Bytes())
 }
 
+func (n *Notify) retry() {
+	if n.Client == nil {
+		log.Printf("can not retry on a nil cilent")
+		return
+	}
+
+	if n.conn != nil {
+		n.Close()
+	}
+	// 30秒重连
+	c := time.Tick(time.Second * 30)
+
+	var err error
+	for {
+		<-c
+		err = n.dail()
+		if err != nil {
+			log.Printf("reconnect to websocket fail (%s)\n", err)
+		}
+		return
+	}
+}
+
 func (n *Notify) dail() (err error) {
 	req, err := n.Client.getRequest("GET", "platform/notify", nil)
 	tcpcon, err := net.Dial("tcp", req.URL.Host)
@@ -56,6 +81,12 @@ func (n *Notify) dail() (err error) {
 }
 
 func (n *Notify) Consume(topic string) (ch chan *Delivery, err error) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("(*Notify).Consume meet a panic (%s)\n", err)
+			go n.retry()
+		}
+	}()
 	ch = make(chan *Delivery)
 	data := []byte{command_consume}
 	if topic != "" {
