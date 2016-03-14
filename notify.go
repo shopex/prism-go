@@ -86,25 +86,27 @@ func (n *Notify) dail() (err error) {
 	return
 }
 
-func (n *Notify) consume(topic string, prefetch int) error {
+func (n *Notify) consume(topic string, prefetch int, ch chan *Delivery) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("(*Notify).Consume meet a panic (%s)\n", err)
+			ok := n.retry()
+			<-ok
+			n.consume(topic, prefetch, ch)
+		}
+	}()
 	data := []byte{command_consume}
 	if topic != "" {
 		l := len(topic)
 		data = append(data, uint8(l/256), uint8(l%256))
 		data = append(data, []byte(topic)...)
 	}
-	return n.conn.WriteMessage(1, data)
-}
+	err := n.conn.WriteMessage(1, data)
+	if err != nil {
+		log.Printf("write to websocket err (%s)\n", err)
+		return
+	}
 
-func (n *Notify) readMessage(ch chan *Delivery) {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Printf("(*Notify).Consume meet a panic (%s)\n", err)
-			ok := n.retry()
-			<-ok
-			n.readMessage(ch)
-		}
-	}()
 	for {
 		_, data, err := n.conn.ReadMessage()
 		d := &Delivery{}
@@ -114,16 +116,12 @@ func (n *Notify) readMessage(ch chan *Delivery) {
 			ch <- d
 		}
 	}
+	return
 }
 
 func (n *Notify) Consume(topic string) (ch chan *Delivery, err error) {
-
 	ch = make(chan *Delivery)
-	err = n.consume(topic, 1)
-	if err != nil {
-		return
-	}
-	go n.readMessage(ch)
+	go n.consume(topic, 1, ch)
 	return
 }
 
