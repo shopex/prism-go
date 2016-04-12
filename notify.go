@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"net/http"
+	"net/http/httputil"
 	"strconv"
 	"time"
 
@@ -83,7 +85,13 @@ func (n *Notify) dail() (err error) {
 		return err
 	}
 	req.URL.Scheme = "ws"
-	n.conn, _, err = websocket.NewClient(tcpcon, req.URL, req.Header, 128, 128)
+	var resp *http.Response
+	n.conn, resp, err = websocket.NewClient(tcpcon, req.URL, req.Header, 128, 128)
+	if resp != nil {
+		data, err := httputil.DumpResponse(resp, true)
+		log.Println(string(data))
+		log.Println(err)
+	}
 	return
 }
 
